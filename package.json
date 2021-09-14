@@ -1,15 +1,23 @@
 {
-  "name": "remove-comments",
+  "name": "r-comments",
   "version": "1.0.0",
   "description": "删除项目文件中的注释.",
   "main": "index.js",
+  "bin": {
+    "r-comments": "index.js",
+    "rc": "index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/wll8/remove-comments.git"
+  },
   "scripts": {
     "start": "nodemon --watch index.js --exec \"node index.js\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["remove comments"],
+  "author": "xw",
+  "license": "MIT",
   "dependencies": {
     "decomment": "^0.9.4",
     "fast-glob": "^3.2.7"
