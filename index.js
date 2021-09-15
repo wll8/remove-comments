@@ -3,6 +3,7 @@
 const fs = require(`fs`)
 const path = require(`path`)
 const decomment = require('decomment')
+const { isText } = require('istextorbinary')
 const fg = require('fast-glob');
 
 let config = {
@@ -14,7 +15,7 @@ let config = {
   
   // 默认配置 object
   default: {
-    trim: false,
+    trim: true,
   },
   
   // 自定义处理逻辑
@@ -69,9 +70,7 @@ if (require.main === module) {
  * @param {object} config.alias -- 文件后缀别名
  */
 function rc(userConfig) {
-
   config.list = userConfig.list || [] 
-
   config.default = {
     ...userConfig.default,
     ...config.default,
@@ -91,13 +90,23 @@ function rc(userConfig) {
   }, config.handle)
 
   const entries = fg.sync(config.list);
-  entries.forEach(filePath => {
+  Promise.all(entries.map(filePath => new Promise((resolve, reject) => {
     try {
-      removeComment(filePath)
-      console.log(`yes ${filePath}`)
+      if(isText(filePath)) {
+        removeComment(filePath)
+        // console.log(`yes  ${filePath}`)
+        resolve(`yes`)
+      } else {
+        console.log(`skip ${filePath}`)
+        resolve(`skip`)
+      }
     } catch (error) {
-      console.log(`err ${filePath}`, error)
+      console.log(`err  ${filePath}`, error)
+      resolve(`err`)
     }
+  }))).then(arr => {
+    const res = arr.reduce((prev, curr) => (prev[curr] = ++prev[curr] || 1, prev), {})
+    console.log(res)
   })
 }
 

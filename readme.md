@@ -24,6 +24,18 @@ rc({
   list: [
     `test/**/*.*`,
   ],
+
+  // The default configuration, it is the options of decomment
+  default: {
+    trim: true,
+  },
+
+  // Custom configuration or processing logic
+  handle: {
+    css: {
+      ignore: /url\([\w\s:\/=\-\+;,]*\)/g,
+    },
+  },
 })
 ```
 
