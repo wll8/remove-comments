@@ -1,6 +1,8 @@
 # r-comments
 Delete comments in files in batches.
 
+![20210915193210](https://cdn.jsdelivr.net/gh/wll8/static@master/tc/20210915193210.png)
+
 ## Features
 - Supports batch processing of files using the `glob` method
 - Delete single-line multi-line comments from html, js, json, css/text
@@ -20,6 +22,9 @@ When the type is `js, json`, it will be grammatically analyzed, and other types 
 ``` js
 const rc = require(`r-comments`)
 rc({
+  // Format with uglify
+  format: false,
+  
   // List of files to be processed
   list: [
     `test/**/*.*`,
@@ -45,6 +50,8 @@ rc({
 ``` sh
 rc list=src/**/*.*,!./src/use.js
 ```
+
+You can also use it with commands like `npm run lint --fix`.
 
 ## Thanks
 - [decomment](https://github.com/vitaly-t/decomment)

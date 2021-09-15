@@ -3,10 +3,14 @@
 const fs = require(`fs`)
 const path = require(`path`)
 const decomment = require('decomment')
+const uglify = require('uglify-js')
 const { isText } = require('istextorbinary')
 const fg = require('fast-glob');
 
 let config = {
+  // 使用 uglify 进行格式化 boolean | object
+  format: false,
+  
   // 要处理的文件列表
   list: [
     `test/**/*.*`,
@@ -33,7 +37,7 @@ let config = {
       // js
       ({code, option, decomment}) => {
         const outStr = code.replace(/(<script[^>]*>)([\s\S]*?)(<\/script>)/gm, ($0, $1, $2, $3) => {
-          const res = decomment($2, option)
+          const res = handleJs({ext: `js`, code: $2, option, decomment})
           return `${$1}${res}${$3}`
         })
         return outStr
@@ -58,6 +62,7 @@ let config = {
 if (require.main === module) {
   let cliArg = parseArgv()
   config.list = cliArg.list ? cliArg.list.split(`,`) : []
+  config.format = cliArg.format !== undefined ? cliArg.format : config.format
   rc(config)
 }
 
@@ -83,6 +88,37 @@ function rc(userConfig) {
     ...userConfig.alias,
     ...config.alias,
   }
+  config.format = config.format === true ? {
+    /**
+     * 压缩代码, 例如多个变量声明变为一行  
+     * 如果使用了 eslint, 建议不进行压缩, 因为压缩后会产生类似的代码导致难以通过校验: 不允许再次声明变量  
+     * `error: 't' is already defined (no-redeclare) at src\util\index.js:2:7`:  
+     * ``` js
+     * function rangeDate(e, t) {
+     *   var t = (new Date(t) - new Date(e)) / 1e3 / 60 / 60 / 24,
+     *     n = Math.floor(1 + t)
+     *   let o = []
+     *   for (let t = 0; t < n; t++) o.push(format(new Date(e).getTime() + 864e5 * t))
+     *   return o
+     * }
+     * ```
+     */
+    compress: false,
+    
+    mangle: true, // 压缩变量名
+    output: {
+      /**
+       * 尽最大努力保持行号, 开启此选项可能会出现问题, 导致 eslint 不能自动修复
+       */
+      preserve_line: false,
+      
+      beautify: true, // 格式化代码
+      ascii_only: true, // 转义字符串和正则表达式中的 Unicode 字符
+      comments: false, // 保留版权注释
+      semicolons: false, // 用分号分割语句
+      width: 80, // 行宽
+    },
+  } : config.format
   // 处理别名
   config.handle = Object.entries(config.alias).reduce((acc, [key, val]) => {
     val.forEach(alias => (acc[alias] = acc[key]))
@@ -130,7 +166,7 @@ function removeComment(filePath) {
       return [({code, option, decomment}) => {
         option = handle || option
         if([`js`, `json`].includes(ext)) {
-          return decomment(code, option)
+          return handleJs({ext, code, option, decomment})
         } else {
           return decomment.text(code, option)
         }
@@ -143,6 +179,16 @@ function removeComment(filePath) {
   })
 
   fs.writeFileSync(filePath, outStr, `utf8`)
+}
+
+function handleJs({ext, code, option, decomment}) {
+  let outStr = code
+  if([`js`].includes(ext) && config.format) {
+    outStr = uglify.minify(outStr, config.format).code || outStr
+  } else {
+    outStr = decomment(code, option)|| outStr
+  }
+  return outStr
 }
 
 /**
